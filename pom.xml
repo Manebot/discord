@@ -17,7 +17,7 @@
         <repository>
             <id>tomp2p.net</id>
             <name>tomp2p</name>
-            <url>http://tomp2p.net/dev/mvn/</url>
+            <url>https://tomp2p.net/dev/mvn/</url>
         </repository>
         <repository>
             <id>public</id>
