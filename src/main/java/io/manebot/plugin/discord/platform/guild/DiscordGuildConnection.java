@@ -251,7 +251,7 @@ public class DiscordGuildConnection implements AudioChannelRegistrant, Community
 
                 @Override
                 public void handleEncodedAudio(OpusPacket opusPacket) {
-                    //TODO
+
                 }
             });
 
