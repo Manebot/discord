@@ -19,6 +19,8 @@ import io.manebot.plugin.discord.platform.audio.DiscordMixerSink;
 import io.manebot.plugin.discord.database.model.DiscordGuild;
 import io.manebot.plugin.discord.platform.DiscordPlatformConnection;
 
+import io.manebot.plugin.discord.platform.audio.voice.AudioFeedListener;
+import io.manebot.plugin.discord.platform.audio.voice.OpusListener;
 import io.manebot.plugin.discord.platform.user.DiscordPlatformUser;
 import io.manebot.user.User;
 import io.manebot.user.UserAssociation;
@@ -35,16 +37,19 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.managers.AudioManager;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
  * Represents a connection to a specific authorized Guild in Discord.
  */
 public class DiscordGuildConnection implements AudioChannelRegistrant, Community {
+    // See: https://discord.com/developers/docs/topics/voice-connections#voice-data-interpolation
+    private static final byte[] silence = new byte[] { (byte)0xF8, (byte)0xFF, (byte)0xFE };
+
     private final Plugin plugin;
     private final DiscordGuild guildModel;
     private final Guild guild;
@@ -52,6 +57,8 @@ public class DiscordGuildConnection implements AudioChannelRegistrant, Community
     private final Audio audio;
     private final io.manebot.plugin.audio.api.AudioConnection audioConnection;
     private final Object voiceConnectionLock = new Object();
+
+    private final Map<DiscordPlatformUser, OpusListener> feeds = new HashMap<>();
 
     private final Object registerLock = new Object();
     private boolean registered = false;
@@ -251,7 +258,7 @@ public class DiscordGuildConnection implements AudioChannelRegistrant, Community
 
                 @Override
                 public void handleEncodedAudio(OpusPacket opusPacket) {
-
+                    DiscordGuildConnection.this.handleEncodedAudio(opusPacket);
                 }
             });
 
@@ -262,6 +269,48 @@ public class DiscordGuildConnection implements AudioChannelRegistrant, Community
         } else
             plugin.getLogger().warning("Couldn't register audio for guild ["
                     + getId() + "] because audio was not initialized.");
+    }
+
+    private void handleEncodedAudio(OpusPacket packet) {
+        try {
+            Logger.getGlobal().info(packet.getSSRC() + " " + packet.getOpusAudio().length);
+
+            DiscordPlatformUser platformUser = (DiscordPlatformUser)
+                    connection.getPlatformUser(Long.toString(packet.getUserId()));
+
+            if (platformUser == null)
+                return;
+
+            if (platformUser.isSelf())
+                return;
+
+            byte[] encodedData = packet.getOpusAudio();
+            int packetId = (packet.getSequence() & 0xFFFF);
+
+            boolean speaking;
+            if (encodedData.length <= 0 || Arrays.equals(silence, encodedData)) {
+                speaking = false;
+            } else {
+                speaking = true;
+            }
+
+            if (speaking) {
+                // Get listener or create one
+                OpusListener listener = feeds.get(platformUser);
+                if (listener == null || listener.hasEnded()) {
+                    feeds.put(platformUser,
+                            listener = new AudioFeedListener(channel, platformUser, 48000, 2));
+                }
+
+                // Receive audio
+                listener.receiveAsync(packetId, encodedData);
+            } else {
+                OpusListener listener = feeds.remove(platformUser);
+                if (listener != null) listener.endAsync();
+            }
+        } catch (Throwable ex) {
+            plugin.getLogger().log(Level.WARNING, "Problem processing voice packet", ex);
+        }
     }
 
     public void register() throws Exception {

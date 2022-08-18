@@ -3,7 +3,7 @@ package io.manebot.plugin.discord.platform.audio.voice;
 import io.manebot.platform.PlatformUser;
 import io.manebot.plugin.audio.channel.AudioChannel;
 import io.manebot.plugin.audio.mixer.input.AudioProvider;
-import io.manebot.plugin.ts3.platform.server.model.TeamspeakClient;
+import io.manebot.plugin.discord.platform.user.DiscordPlatformUser;
 import io.manebot.user.User;
 import io.manebot.user.UserAssociation;
 
@@ -19,7 +19,7 @@ public class AudioFeedListener extends OpusListener implements AudioProvider {
     private long written = 0; // total sent to child listeners
     private boolean connected = false;
 
-    public AudioFeedListener(AudioChannel channel, TeamspeakClient client, int sampleRate, int channels)
+    public AudioFeedListener(AudioChannel channel, DiscordPlatformUser client, int sampleRate, int channels)
             throws IOException {
         super(client, sampleRate, channels);
         this.channel = channel;
@@ -86,7 +86,7 @@ public class AudioFeedListener extends OpusListener implements AudioProvider {
     }
 
     private User getUser() {
-        PlatformUser platformUser = getClient().getPlatformUser();
+        PlatformUser platformUser = getClient();
         if (platformUser == null) return null;
 
         UserAssociation association = platformUser.getAssociation();
@@ -97,7 +97,7 @@ public class AudioFeedListener extends OpusListener implements AudioProvider {
 
     private void connect() {
         if (!connected) {
-            channel.setProvider(getClient().getPlatformUser(), this);
+            channel.setProvider(getClient(), this);
 
             connected = true;
 
@@ -109,7 +109,7 @@ public class AudioFeedListener extends OpusListener implements AudioProvider {
 
     private void disconnect() {
         if (connected) {
-            channel.removeProvider(getClient().getPlatformUser());
+            channel.removeProvider(getClient());
 
             connected = false;
 

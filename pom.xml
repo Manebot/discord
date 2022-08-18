@@ -22,7 +22,7 @@
         <repository>
             <id>public</id>
             <name>Manebot public release repository</name>
-            <url>https://repo.manebot.io/repository/public/</url>
+            <url>http://172.31.13.98:8999/repository/public/</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -37,22 +37,22 @@
         <repository>
             <id>public-releases</id>
             <name>Manebot public release repository</name>
-            <url>https://repo.manebot.io/repository/public-releases/</url>
+            <url>http://172.31.13.98:8999/repository/public-releases/</url>
             <uniqueVersion>true</uniqueVersion>
         </repository>
         <snapshotRepository>
             <id>public-snapshots</id>
             <name>Manebot public release snapshots</name>
-            <url>https://repo.manebot.io/repository/public-snapshots/</url>
+            <url>http://172.31.13.98:8999/repository/public-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
 
     <groupId>io.manebot.plugin</groupId>
     <artifactId>discord</artifactId>
-    <version>4.2.1.2</version>
+    <version>4.2.3-SNAPSHOT</version>
 
     <properties>
-        <jda.version>v4.2.0</jda.version>
+        <jda.version>v4.4.0</jda.version>
     </properties>
 
     <build>
